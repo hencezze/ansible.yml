@@ -1,0 +1,71 @@
+---
+- name: Ins dckr
+  hosts: zabbix
+  tasks:
+    - name: DOCKER block
+      block:
+        - name: add universe
+          apt_repository:
+            repo: deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe
+            state: present
+
+        - name: instl dckr
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+            update-cache: yes
+            cache_valid_time: 86400
+
+        - name: add key docker
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+
+        - name: add universe
+          apt_repository:
+            repo: >
+              deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg]
+              https://download.docker.com/linux/ubuntu
+              {{ ansible_distribution_release }} stable
+            state: present
+            update-cache: yes
+            filename: docker
+
+        - name: instl dkcr-ce
+          apt: docker-ce
+          update-cache: yes
+
+        - name: check install docker
+          service:
+            name: docker
+            state: restarted
+            enabled: yes
+	  become: yes
+
+    - name: docker-compose
+      block:
+        - name: docker-compose get version
+		  uri:
+		     url: https://api.github.com/repos/docker/compose/releases/latest
+			 body_format: json
+		  register: page
+		- name: install docker-compose
+		  get_url:
+		    url: https://github.com/docker/compose/releases/download/{{ page.json.tag_name }}/docker-compose-Linux-x86_64
+			dest: /usr/local/bin/docker-compose
+			mode: 0755
+	  become: yes
+	
+    - name: install finish
+      block: 
+        - name: add user to docker group
+		  user:
+		    name: "{{ ansible_user }}"
+			group: docker 
+			append: yes
+        - name: reboot
+          reboot:
+	  become: yes
