@@ -1,0 +1,17 @@
+--- 
+- name: Testing async
+  hosts: demo
+  tasks:
+    - name: Testing async
+	  block:
+	     - name: Sleep
+		   command: /bin/sleep 15
+		   async: 1000
+		   poll: 5
+		   register: sleep
+		 - debug:
+		     var: sleep
+		 - name: echo
+		   command: echo "Done"
+	  become: yes
+	  

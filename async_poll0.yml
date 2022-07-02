@@ -1,0 +1,24 @@
+---
+- name: Testing async
+  hosts: demo
+  tasks:
+    - name: Async block
+	  block:
+	    - name: Sleep
+		  command: /bin/sleep 15
+		  async: 1000
+		  poll: 0
+		  register: slp
+		- debug:
+		    var: slp
+		- name: echo
+		  command: echo "DONE"
+	  become: yes
+	  - name: Check sleep status
+	    async_status:
+		  jid: "{{ slp.ansible_job_id }}"
+		register: chck
+		until: chck.finished
+		retries: 100
+		delay: 5
+		become: true
